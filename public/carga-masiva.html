@@ -7,25 +7,30 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root{
-    --color-bg:#f7f8fa;
-    --color-surface:#ffffff;
-    --color-border:#dfe3e8;
-    --color-text:#1b2430;
-    --color-text-muted:#5b6672;
-    --color-accent:#c8102e;
-    --color-accent-dark:#9c0c23;
-    --color-ok:#1a7f37;
-    --color-ok-bg:#e7f6ec;
-    --color-error:#c4232b;
-    --color-error-bg:#fdeceb;
-    --color-warn:#9a6700;
-    --color-warn-bg:#fff6e0;
+    --color-bg:#0b1626;
+    --color-surface:#132236;
+    --color-surface-raised:#182b42;
+    --color-border:#263a53;
+    --color-text:#eef2f7;
+    --color-text-muted:#93a3b8;
+    --color-accent:#ea173e;
+    --color-accent-dark:#c01030;
+    --color-gold:#e3a92a;
+    --color-gold-dark:#c08f1f;
+    --color-ok:#3ddc84;
+    --color-ok-bg:rgba(61,220,132,0.12);
+    --color-error:#ff6b78;
+    --color-error-bg:rgba(255,107,120,0.14);
+    --color-warn:#e3a92a;
+    --color-warn-bg:rgba(227,169,42,0.14);
     --radius:10px;
     --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--color-bg);color:var(--color-text);font-family:var(--font);font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent;}
   body{min-height:100vh;padding:16px;padding-bottom:40px;}
+  .brand{display:flex;justify-content:center;margin:0 0 18px;}
+  .brand img{max-width:260px;width:100%;height:auto;display:block;}
   h1{font-size:20px;margin:0 0 4px;}
   .subtitle{color:var(--color-text-muted);font-size:14px;margin:0 0 18px;}
   .card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius);padding:16px;margin-bottom:16px;}
@@ -39,8 +44,10 @@
   button:disabled{opacity:.55;cursor:not-allowed;}
   .btn-primary{background:var(--color-accent);color:#fff;}
   .btn-primary:hover:not(:disabled){background:var(--color-accent-dark);}
-  .btn-secondary{background:#fff;color:var(--color-text);border-color:var(--color-border);}
-  .btn-secondary:hover:not(:disabled){background:#f1f2f4;}
+  .btn-secondary{background:var(--color-surface-raised);color:var(--color-text);border-color:var(--color-border);}
+  .btn-secondary:hover:not(:disabled){background:#1f354e;}
+  .btn-gold{background:linear-gradient(135deg,var(--color-gold),var(--color-gold-dark));color:#1b1203;text-decoration:none;display:inline-flex;align-items:center;gap:8px;}
+  .btn-gold:hover{filter:brightness(1.05);}
   .btn-danger-ghost{background:transparent;color:var(--color-error);border-color:var(--color-error-bg);padding:8px 10px;min-height:36px;font-size:13px;}
   input[type="file"]{display:none;}
   .file-label{display:inline-flex;align-items:center;gap:8px;}
@@ -63,8 +70,9 @@
   .field label{font-size:12px;font-weight:600;color:var(--color-text-muted);}
   .field input, .field select{
     font-family:var(--font);font-size:15px;padding:10px;border:1px solid var(--color-border);border-radius:8px;
-    min-height:44px;background:#fff;color:var(--color-text);width:100%;
+    min-height:44px;background:var(--color-surface-raised);color:var(--color-text);width:100%;
   }
+  .field select{color-scheme:dark;}
   .field input:focus, .field select:focus{outline:2px solid var(--color-accent);outline-offset:1px;}
   .error-msg{grid-column:1 / -1;background:var(--color-error-bg);color:var(--color-error);border-radius:8px;padding:8px 10px;font-size:13px;margin-top:4px;}
 
@@ -83,6 +91,8 @@
 </head>
 <body>
 
+  <div class="brand"><img src="logo-redbull-imbera.png" alt="Red Bull · Imbera"></div>
+
   <h1>Carga masiva de servicios</h1>
   <p class="subtitle">Sube un Excel/CSV o agrega filas a mano. Se valida y se crea cada servicio directo en SERVICIOS.</p>
 
@@ -91,6 +101,7 @@
     <div class="row-actions">
       <label class="file-label btn-secondary" for="fileInput">📄 Subir Excel / CSV</label>
       <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+      <a class="btn-gold" href="Plantilla_Carga_Masiva_Servicios.xlsx" download>⬇️ Descargar plantilla</a>
     </div>
     <p class="hint">Usa la plantilla con los menús de selección para TIPO DE SERVICIO, ESTADO y USERS — así se evitan errores de escritura. Columnas esperadas: Referencia, TIPO DE SERVICIO, POS_Sucursal, POS_Contacto, POS_ContactoTel, ESTADO, POS_LinkURL, MATERIAL, SERIE, USERS. rowID no se pide — lo genera Glide.</p>
   </div>
