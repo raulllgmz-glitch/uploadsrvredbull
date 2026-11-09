@@ -180,7 +180,7 @@ module.exports = async function handler(req, res) {
       const chunk = toCreate.slice(i, i + 10);
       const records = chunk.map((p) => {
         const fields = {
-          [F.STATUS]: [{ id: STATUS_ABIERTA_RECORD_ID }],
+          [F.STATUS]: [STATUS_ABIERTA_RECORD_ID],
           [F.TIPO_TEXTO]: p.tipoMatch.fields[TIPO_NAME_FIELD],
           [F.POS_SUCURSAL]: p.row.posSucursal || '',
           [F.POS_CONTACTO]: p.row.posContacto || '',
@@ -189,8 +189,8 @@ module.exports = async function handler(req, res) {
           [F.MATERIAL]: p.row.material || '',
           [F.SERIE]: p.row.serie || '',
         };
-        if (p.userMatch) fields[F.USERS] = [{ id: p.userMatch.id }];
-        if (p.estadoMatch) fields[F.ESTADO] = [{ id: p.estadoMatch.id }];
+        if (p.userMatch) fields[F.USERS] = [p.userMatch.id];
+        if (p.estadoMatch) fields[F.ESTADO] = [p.estadoMatch.id];
         return { fields };
       });
 
