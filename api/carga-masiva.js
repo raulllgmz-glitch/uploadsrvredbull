@@ -31,6 +31,8 @@ const F = {
   ESTADO: 'fld5GmisJnqEwT13P',
   USERS: 'fldNAIGHsE8kW4xYk',
   FOLIO: 'fldwFptMJflwLvJss', // campo formula, solo para leerlo de vuelta
+  CONFIRMADO: 'fldDbu8skkjaWjFuz',
+  CARGA_MASIVA_WEB: 'fldIu6hDbpLUQccJ7', // marca el origen y evita que SEND_CREACIÓN_CORREO / SEND_AUTORIZACIÓN_TRADE disparen un correo por cada fila
 };
 
 const TIPO_NAME_FIELD = 'fldApgNVNsQ2nSeEQ';
@@ -188,6 +190,8 @@ module.exports = async function handler(req, res) {
           [F.POS_LINK_URL]: p.row.posLinkUrl || '',
           [F.MATERIAL]: p.row.material || '',
           [F.SERIE]: p.row.serie || '',
+          [F.CONFIRMADO]: new Date().toLocaleString('en-US', { timeZone: 'America/Mexico_City' }),
+          [F.CARGA_MASIVA_WEB]: true,
         };
         if (p.userMatch) fields[F.USERS] = [p.userMatch.id];
         if (p.estadoMatch) fields[F.ESTADO] = [p.estadoMatch.id];
