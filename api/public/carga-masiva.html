@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carga masiva de servicios</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --color-bg:#f7f8fa;
+    --color-surface:#ffffff;
+    --color-border:#dfe3e8;
+    --color-text:#1b2430;
+    --color-text-muted:#5b6672;
+    --color-accent:#c8102e;
+    --color-accent-dark:#9c0c23;
+    --color-ok:#1a7f37;
+    --color-ok-bg:#e7f6ec;
+    --color-error:#c4232b;
+    --color-error-bg:#fdeceb;
+    --color-warn:#9a6700;
+    --color-warn-bg:#fff6e0;
+    --radius:10px;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--color-bg);color:var(--color-text);font-family:var(--font);font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent;}
+  body{min-height:100vh;padding:16px;padding-bottom:40px;}
+  h1{font-size:20px;margin:0 0 4px;}
+  .subtitle{color:var(--color-text-muted);font-size:14px;margin:0 0 18px;}
+  .card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius);padding:16px;margin-bottom:16px;}
+  .card h2{font-size:15px;margin:0 0 10px;}
+  .row-actions{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:4px;}
+  button{
+    font-family:var(--font);font-size:15px;font-weight:600;border-radius:8px;border:1px solid transparent;
+    padding:12px 16px;min-height:44px;cursor:pointer;transition:transform .15s ease, opacity .15s ease;
+  }
+  button:active{transform:scale(0.98);}
+  button:disabled{opacity:.55;cursor:not-allowed;}
+  .btn-primary{background:var(--color-accent);color:#fff;}
+  .btn-primary:hover:not(:disabled){background:var(--color-accent-dark);}
+  .btn-secondary{background:#fff;color:var(--color-text);border-color:var(--color-border);}
+  .btn-secondary:hover:not(:disabled){background:#f1f2f4;}
+  .btn-danger-ghost{background:transparent;color:var(--color-error);border-color:var(--color-error-bg);padding:8px 10px;min-height:36px;font-size:13px;}
+  input[type="file"]{display:none;}
+  .file-label{display:inline-flex;align-items:center;gap:8px;}
+  .hint{font-size:13px;color:var(--color-text-muted);margin-top:8px;}
+  a.hint-link{color:var(--color-accent);text-decoration:none;font-weight:600;}
+
+  .entries{display:flex;flex-direction:column;gap:12px;}
+  .entry{border:1px solid var(--color-border);border-radius:var(--radius);padding:12px;background:#fcfcfd;position:relative;}
+  .entry.has-error{border-color:var(--color-error);background:var(--color-error-bg);}
+  .entry.is-ok{border-color:var(--color-ok);background:var(--color-ok-bg);}
+  .entry-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .entry-ref{font-weight:600;font-size:14px;}
+  .entry-status{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;}
+  .entry-status.ok{color:var(--color-ok);}
+  .entry-status.error{color:var(--color-error);}
+  .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  @media (min-width:640px){ .field-grid{grid-template-columns:1fr 1fr 1fr;} }
+  .field{display:flex;flex-direction:column;gap:4px;}
+  .field.full{grid-column:1 / -1;}
+  .field label{font-size:12px;font-weight:600;color:var(--color-text-muted);}
+  .field input, .field select{
+    font-family:var(--font);font-size:15px;padding:10px;border:1px solid var(--color-border);border-radius:8px;
+    min-height:44px;background:#fff;color:var(--color-text);width:100%;
+  }
+  .field input:focus, .field select:focus{outline:2px solid var(--color-accent);outline-offset:1px;}
+  .error-msg{grid-column:1 / -1;background:var(--color-error-bg);color:var(--color-error);border-radius:8px;padding:8px 10px;font-size:13px;margin-top:4px;}
+
+  .summary{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+  .pill{border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;}
+  .pill.ok{background:var(--color-ok-bg);color:var(--color-ok);}
+  .pill.error{background:var(--color-error-bg);color:var(--color-error);}
+  .pill.total{background:#eef0f2;color:var(--color-text-muted);}
+
+  .empty-state{text-align:center;color:var(--color-text-muted);padding:24px 12px;font-size:14px;}
+  .toast{position:fixed;left:16px;right:16px;bottom:16px;background:var(--color-text);color:#fff;padding:12px 16px;border-radius:8px;font-size:14px;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.2);z-index:50;}
+  .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;vertical-align:-3px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  @media (prefers-reduced-motion: reduce){ .spinner{animation:none;} button{transition:none;} }
+</style>
+</head>
+<body>
+
+  <h1>Carga masiva de servicios</h1>
+  <p class="subtitle">Sube un Excel/CSV o agrega filas a mano. Se valida y se crea cada servicio directo en SERVICIOS.</p>
+
+  <div class="card">
+    <h2>1. Agrega las filas</h2>
+    <div class="row-actions">
+      <label class="file-label btn-secondary" for="fileInput">📄 Subir Excel / CSV</label>
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+    </div>
+    <p class="hint">Usa la plantilla con los menús de selección para TIPO DE SERVICIO, ESTADO y USERS — así se evitan errores de escritura. Columnas esperadas: Referencia, TIPO DE SERVICIO, POS_Sucursal, POS_Contacto, POS_ContactoTel, ESTADO, POS_LinkURL, MATERIAL, SERIE, USERS. rowID no se pide — lo genera Glide.</p>
+  </div>
+
+  <div class="card">
+    <h2>2. Revisa y envía</h2>
+    <div id="summary" class="summary" style="display:none;"></div>
+    <div id="entries" class="entries"></div>
+    <div id="emptyState" class="empty-state">Todavía no hay filas. Sube un archivo para empezar.</div>
+    <div class="row-actions" style="margin-top:14px;">
+      <button type="button" class="btn-primary" id="submitBtn" disabled>Crear servicios</button>
+      <button type="button" class="btn-secondary" id="clearOkBtn" style="display:none;">Quitar los ya creados</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" style="display:none;"></div>
+
+<script>
+const TIPOS = ["INSTALACIÓN","REPARACIÓN","RETIRO","TRASLADO"];
+const ESTADOS = ["Aguascalientes","Baja California","Baja California Sur","Campeche","Chiapas","Chihuahua","Ciudad de México","Coahuila de Zaragoza","Colima","Durango","Guanajuato","Guerrero","Hidalgo","Jalisco","México","Michoacán de Ocampo","Morelos","Nayarit","Nuevo León","Oaxaca","Puebla","Querétaro","Quintana Roo","San Luis Potosí","Sinaloa","Sonora","Tabasco","Tamaulipas","Tlaxcala","Veracruz de Ignacio de la Llave","Yucatán","Zacatecas"];
+
+const COLUMN_MAP = {
+  "referencia": "referencia",
+  "tipo de servicio": "tipo",
+  "pos_sucursal": "posSucursal",
+  "pos_contacto": "posContacto",
+  "pos_contactotel": "posContactoTel",
+  "estado": "estado",
+  "pos_linkurl": "posLinkUrl",
+  "material": "material",
+  "serie": "serie",
+  "users": "solicitante"
+};
+
+let rows = []; // { id, referencia, tipo, posSucursal, posContacto, posContactoTel, estado, posLinkUrl, material, solicitante, status: 'pending'|'ok'|'error', errorMsg, folio }
+let uid = 0;
+let submitting = false;
+
+function newRow(partial){
+  uid += 1;
+  return Object.assign({
+    id: 'r' + uid,
+    referencia: '',
+    tipo: '',
+    posSucursal: '',
+    posContacto: '',
+    posContactoTel: '',
+    estado: '',
+    posLinkUrl: '',
+    material: '',
+    serie: '',
+    solicitante: '',
+    status: 'pending',
+    errorMsg: '',
+    folio: ''
+  }, partial || {});
+}
+
+function normalizeHeader(h){
+  return (h || '').toString().trim().toLowerCase();
+}
+
+document.getElementById('fileInput').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    try{
+      const data = new Uint8Array(ev.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(sheet, {defval:''});
+      let added = 0;
+      json.forEach(function(obj){
+        const partial = {};
+        Object.keys(obj).forEach(function(key){
+          const mapped = COLUMN_MAP[normalizeHeader(key)];
+          if(mapped) partial[mapped] = (obj[key] === undefined || obj[key] === null) ? '' : String(obj[key]).trim();
+        });
+        // skip fully blank rows
+        const hasContent = Object.values(partial).some(function(v){ return v && v.length; });
+        if(hasContent){ rows.push(newRow(partial)); added += 1; }
+      });
+      showToast(added + ' fila' + (added === 1 ? '' : 's') + ' cargada' + (added === 1 ? '' : 's') + ' del archivo.');
+      render();
+    }catch(err){
+      showToast('No se pudo leer el archivo: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value = '';
+});
+
+function removeRow(id){
+  rows = rows.filter(function(r){ return r.id !== id; });
+  render();
+}
+
+function updateRow(id, field, value){
+  const r = rows.find(function(r){ return r.id === id; });
+  if(r){ r[field] = value; if(r.status !== 'pending'){ r.status = 'pending'; r.errorMsg=''; } }
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(function(){ t.style.display = 'none'; }, 4000);
+}
+
+function fieldHtml(row, key, label, type){
+  const val = (row[key] || '').toString().replace(/"/g,'&quot;');
+  if(type === 'select-tipo'){
+    let opts = '<option value="">—</option>';
+    TIPOS.forEach(function(t){ opts += '<option value="'+t+'"'+(row.tipo===t?' selected':'')+'>'+t+'</option>'; });
+    return '<div class="field"><label>'+label+'</label><select data-id="'+row.id+'" data-field="'+key+'">'+opts+'</select></div>';
+  }
+  if(type === 'select-estado'){
+    let opts = '<option value="">—</option>';
+    ESTADOS.forEach(function(s){ opts += '<option value="'+s+'"'+(row.estado===s?' selected':'')+'>'+s+'</option>'; });
+    return '<div class="field"><label>'+label+'</label><select data-id="'+row.id+'" data-field="'+key+'">'+opts+'</select></div>';
+  }
+  const inputmode = (key === 'posContactoTel') ? ' inputmode="tel" type="tel"' : (key==='solicitante' ? ' inputmode="email"' : ' type="text"');
+  return '<div class="field"><label>'+label+'</label><input'+inputmode+' data-id="'+row.id+'" data-field="'+key+'" value="'+val+'"></div>';
+}
+
+function render(){
+  const entriesEl = document.getElementById('entries');
+  const emptyEl = document.getElementById('emptyState');
+  const summaryEl = document.getElementById('summary');
+  const submitBtn = document.getElementById('submitBtn');
+  const clearOkBtn = document.getElementById('clearOkBtn');
+
+  if(rows.length === 0){
+    entriesEl.innerHTML = '';
+    emptyEl.style.display = 'block';
+    summaryEl.style.display = 'none';
+    submitBtn.disabled = true;
+    clearOkBtn.style.display = 'none';
+    return;
+  }
+  emptyEl.style.display = 'none';
+
+  const okCount = rows.filter(function(r){ return r.status === 'ok'; }).length;
+  const errorCount = rows.filter(function(r){ return r.status === 'error'; }).length;
+  summaryEl.style.display = 'flex';
+  summaryEl.innerHTML =
+    '<span class="pill total">'+rows.length+' fila'+(rows.length===1?'':'s')+'</span>' +
+    (okCount ? '<span class="pill ok">✅ '+okCount+' creada'+(okCount===1?'':'s')+'</span>' : '') +
+    (errorCount ? '<span class="pill error">❌ '+errorCount+' con error</span>' : '');
+
+  clearOkBtn.style.display = okCount ? 'inline-block' : 'none';
+  submitBtn.disabled = submitting || rows.every(function(r){ return r.status === 'ok'; });
+  submitBtn.innerHTML = submitting ? '<span class="spinner"></span> Enviando…' : 'Crear servicios';
+
+  entriesEl.innerHTML = rows.map(function(r){
+    const statusClass = r.status === 'ok' ? 'is-ok' : (r.status === 'error' ? 'has-error' : '');
+    const statusBadge = r.status === 'ok'
+      ? '<span class="entry-status ok">✅ Creado'+(r.folio ? ' · '+r.folio : '')+'</span>'
+      : (r.status === 'error' ? '<span class="entry-status error">❌ Error</span>' : '');
+    const disabledAttr = (r.status === 'ok' || submitting) ? ' disabled' : '';
+    return (
+      '<div class="entry '+statusClass+'" data-row="'+r.id+'">' +
+        '<div class="entry-head">' +
+          '<span class="entry-ref">'+(r.referencia ? r.referencia : 'Fila sin referencia')+'</span>' +
+          statusBadge +
+        '</div>' +
+        '<div class="field-grid">' +
+          fieldHtml(r,'referencia','Referencia') +
+          fieldHtml(r,'tipo','Tipo de Servicio','select-tipo') +
+          fieldHtml(r,'posSucursal','POS_Sucursal') +
+          fieldHtml(r,'posContacto','POS_Contacto') +
+          fieldHtml(r,'posContactoTel','POS_ContactoTel') +
+          fieldHtml(r,'estado','ESTADO','select-estado') +
+          fieldHtml(r,'posLinkUrl','POS_LinkURL') +
+          fieldHtml(r,'material','MATERIAL') +
+          fieldHtml(r,'serie','SERIE') +
+          fieldHtml(r,'solicitante','USERS (nombre o correo)') +
+          (r.status === 'error' ? '<div class="error-msg">'+r.errorMsg+'</div>' : '') +
+        '</div>' +
+        (r.status !== 'ok' ? '<button type="button" class="btn-danger-ghost" data-remove="'+r.id+'" style="margin-top:10px;">Quitar fila</button>' : '') +
+      '</div>'
+    );
+  }).join('');
+
+  // wire inputs
+  entriesEl.querySelectorAll('[data-field]').forEach(function(el){
+    el.disabled = submitting || (rows.find(function(r){return r.id===el.getAttribute('data-id');}) || {}).status === 'ok';
+    el.addEventListener('change', function(){
+      updateRow(el.getAttribute('data-id'), el.getAttribute('data-field'), el.value);
+      render();
+    });
+  });
+  entriesEl.querySelectorAll('[data-remove]').forEach(function(el){
+    el.addEventListener('click', function(){ removeRow(el.getAttribute('data-remove')); });
+  });
+}
+
+document.getElementById('clearOkBtn').addEventListener('click', function(){
+  rows = rows.filter(function(r){ return r.status !== 'ok'; });
+  render();
+});
+
+document.getElementById('submitBtn').addEventListener('click', async function(){
+  const pending = rows.filter(function(r){ return r.status !== 'ok'; });
+  if(pending.length === 0) return;
+  submitting = true;
+  render();
+  try{
+    const resp = await fetch('/api/carga-masiva', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ rows: pending.map(function(r){
+        return {
+          id: r.id, referencia: r.referencia, tipo: r.tipo, posSucursal: r.posSucursal,
+          posContacto: r.posContacto, posContactoTel: r.posContactoTel, estado: r.estado,
+          posLinkUrl: r.posLinkUrl, material: r.material, serie: r.serie, solicitante: r.solicitante
+        };
+      }) })
+    });
+    if(!resp.ok){
+      const t = await resp.text();
+      throw new Error('El servidor respondió ' + resp.status + ': ' + t.slice(0,200));
+    }
+    const data = await resp.json();
+    (data.results || []).forEach(function(res){
+      const r = rows.find(function(r){ return r.id === res.id; });
+      if(!r) return;
+      if(res.ok){
+        r.status = 'ok';
+        r.folio = res.folio || '';
+        r.errorMsg = '';
+      } else {
+        r.status = 'error';
+        r.errorMsg = res.error || 'No se pudo crear.';
+      }
+    });
+    const okNow = (data.results||[]).filter(function(r){return r.ok;}).length;
+    showToast(okNow + ' de ' + pending.length + ' servicios creados.');
+  }catch(err){
+    showToast('No se pudo conectar: ' + err.message);
+  }finally{
+    submitting = false;
+    render();
+  }
+});
+
+render();
+</script>
+</body>
+</html>
