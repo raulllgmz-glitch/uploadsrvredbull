@@ -33,6 +33,7 @@ const F = {
   FOLIO: 'fldwFptMJflwLvJss', // campo formula, solo para leerlo de vuelta
   CONFIRMADO: 'fldDbu8skkjaWjFuz',
   CARGA_MASIVA_WEB: 'fldIu6hDbpLUQccJ7', // marca el origen y evita que SEND_CREACIÓN_CORREO / SEND_AUTORIZACIÓN_TRADE disparen un correo por cada fila
+  FECHA_CREACION: 'fldPTefhwXHESoiif', // ninguna automatización la llena sola; la usan las fórmulas de on-time/atraso
 };
 
 const TIPO_NAME_FIELD = 'fldApgNVNsQ2nSeEQ';
@@ -192,6 +193,7 @@ module.exports = async function handler(req, res) {
           [F.SERIE]: p.row.serie || '',
           [F.CONFIRMADO]: new Date().toLocaleString('en-US', { timeZone: 'America/Mexico_City' }),
           [F.CARGA_MASIVA_WEB]: true,
+          [F.FECHA_CREACION]: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' }), // YYYY-MM-DD
         };
         if (p.userMatch) fields[F.USERS] = [p.userMatch.id];
         if (p.estadoMatch) fields[F.ESTADO] = [p.estadoMatch.id];
