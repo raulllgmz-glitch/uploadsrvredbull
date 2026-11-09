@@ -1,0 +1,9 @@
+{
+  "name": "uploadsrvredbull",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pagina de carga masiva de servicios (webview para Glide) conectada a Airtable via Vercel.",
+  "scripts": {
+    "dev": "vercel dev"
+  }
+}
