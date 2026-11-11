@@ -1,0 +1,805 @@
+<title>SRV Scorecard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap');
+
+  :root {
+    color-scheme: dark;
+    --plane:        #10192480;
+    --plane-solid:  #101822;
+    --card:         #1a2839;
+    --card-2:       #223650;
+    --ink-1:        #f4efe6;
+    --ink-2:        #a9bccb;
+    --ink-muted:    #6f8395;
+    --hairline:     rgba(244,239,230,0.09);
+    --pink:         #ff5c8d;
+    --plum:         #732553;
+    --cream:        #e9d8c8;
+    --slate:        #85a3b2;
+    --navy:         #142030;
+    --whale:        #1e3442;
+    --good:         #26b57e;
+    --info:         #3987e5;
+    --warn:         #e8a33d;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--navy); color: var(--ink-1);
+    font-family: "Manrope", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; min-height: 100vh;
+  }
+  h1,h2,h3 { font-family: "Oswald", sans-serif; margin: 0; }
+
+  .shell { max-width: 1200px; margin: 0 auto; padding: 20px 20px 56px; display: grid; grid-template-columns: 1fr 320px; gap: 16px; }
+  @media (max-width: 980px) { .shell { grid-template-columns: 1fr; } }
+
+  .main { display: flex; flex-direction: column; gap: 14px; }
+  .side { display: flex; flex-direction: column; gap: 14px; }
+
+  /* ---------- Top nav ---------- */
+  .topnav { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .mark { width: 30px; height: 30px; border-radius: 999px; background: var(--pink); display: flex; align-items: center; justify-content: center; font-family: "Oswald",sans-serif; font-weight: 700; font-size: 14px; flex: none; color: #2a0c1a; }
+  .seg { display: inline-flex; background: var(--card); border-radius: 999px; padding: 4px; gap: 2px; }
+  .seg button { appearance: none; border: none; background: transparent; color: var(--ink-2); font-family: "Manrope",sans-serif; font-weight: 700; font-size: 12.5px; padding: 9px 16px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+  .seg button.active { background: var(--ink-1); color: #101822; }
+  #modeSeg button[data-mode="scorecard"].active { background: var(--good); color: #052016; }
+  select.pill-select {
+    appearance: none;
+    background: var(--card) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M0 0L5 6L10 0Z' fill='%23a9bccb'/></svg>") no-repeat right 14px center;
+    border: none; color: var(--ink-1); font-family: "JetBrains Mono", monospace; font-size: 12px; font-weight: 500;
+    padding: 10px 34px 10px 16px; border-radius: 999px; min-width: 132px; cursor: pointer;
+  }
+  select.pill-select:focus, .seg button:focus-visible { outline: 2px solid var(--pink); outline-offset: 1px; }
+
+  .multi-select { position: relative; }
+  button.pill-select {
+    appearance: none;
+    background: var(--card) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M0 0L5 6L10 0Z' fill='%23a9bccb'/></svg>") no-repeat right 14px center;
+    border: none; color: var(--ink-1); font-family: "JetBrains Mono", monospace; font-size: 12px; font-weight: 500;
+    padding: 10px 34px 10px 16px; border-radius: 999px; min-width: 132px; cursor: pointer; text-align: left;
+  }
+  .multi-panel {
+    position: absolute; top: calc(100% + 6px); left: 0; z-index: 30; min-width: 210px; max-height: 260px;
+    overflow-y: auto; background: var(--card-2); border: 1px solid var(--hairline); border-radius: 14px;
+    padding: 8px; box-shadow: 0 14px 32px rgba(0,0,0,0.45); display: none;
+  }
+  .multi-panel.open { display: block; }
+  .multi-actions { display: flex; justify-content: space-between; padding: 4px 8px 8px; font-size: 10.5px; color: var(--ink-muted); border-bottom: 1px solid var(--hairline); margin-bottom: 4px; }
+  .multi-actions span { cursor: pointer; text-decoration: underline; font-weight: 700; }
+  .multi-actions span:hover { color: var(--ink-1); }
+  .multi-row { display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: 8px; cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+  .multi-row:hover { background: rgba(244,239,230,0.06); color: var(--ink-1); }
+  .multi-row input { accent-color: var(--pink); width: 14px; height: 14px; cursor: pointer; }
+
+  .nav-spacer { flex: 1; }
+  .util-dot { width: 34px; height: 34px; border-radius: 999px; background: var(--card); display: flex; align-items: center; justify-content: center; color: var(--ink-2); font-size: 13px; flex: none; }
+  .avatar { width: 34px; height: 34px; border-radius: 999px; background: linear-gradient(135deg, var(--pink), var(--plum)); flex: none; }
+
+  .stepper { display: flex; align-items: center; gap: 8px; padding: 2px 4px; }
+  .stepper .lbl { font-size: 11.5px; color: var(--ink-muted); font-weight: 600; margin-right: 4px; }
+  .stepper .dots { display: flex; align-items: center; }
+  .stepper .seg-line { width: 22px; height: 1.5px; background: var(--hairline); }
+  .stepper .step-dot { width: 9px; height: 9px; border-radius: 999px; background: var(--card-2); border: 1.5px solid var(--hairline); flex: none; }
+  .stepper .step-dot.done { background: var(--pink); border-color: var(--pink); }
+  .stepper .step-dot.now { background: var(--cream); border-color: var(--cream); }
+  .stepper .hist { margin-left: auto; font-size: 11.5px; color: var(--ink-2); font-weight: 700; text-decoration: underline; cursor: default; }
+  .stepper .asof { font-size: 11px; color: var(--ink-muted); font-weight: 600; margin-left: 10px; }
+
+  .ring-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .ring-card { background: var(--card); border-radius: 18px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+  .ring-top { display: flex; align-items: center; gap: 10px; }
+  .ring-svg { flex: none; }
+  .ring-name { font-weight: 700; font-size: 12.5px; color: var(--ink-2); }
+  .ring-value { font-family: "JetBrains Mono", monospace; font-weight: 600; font-size: 22px; font-variant-numeric: tabular-nums; }
+  .ring-sub { font-size: 11px; color: var(--ink-muted); }
+  .ring-sub.up { color: var(--good); }
+  .ring-sub.down { color: var(--pink); }
+
+  .section-head { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+  .section-head h2 { font-size: 15px; font-weight: 600; }
+
+  /* ---------- timeline chart ---------- */
+  .timeline-card { background: var(--card); border-radius: 20px; padding: 20px 22px 16px; position: relative; overflow: hidden; }
+  .tl-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 4px; }
+  .tl-title { font-size: 14px; font-weight: 600; }
+  .tl-sub { font-size: 11.5px; color: var(--ink-muted); margin-top: 2px; }
+  .tl-pctwrap { text-align: right; }
+  .tl-pct { font-family: "Oswald", sans-serif; font-weight: 700; font-size: 26px; }
+  .tl-pct-label { font-size: 10.5px; color: var(--ink-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+  .tl-watermark {
+    position: absolute; right: 8px; bottom: -18px; font-family: "Oswald", sans-serif; font-weight: 700;
+    font-size: 108px; color: rgba(244,239,230,0.045); line-height: 1; pointer-events: none; user-select: none;
+  }
+  svg.tl-chart { width: 100%; height: 190px; display: block; overflow: visible; position: relative; z-index: 1; }
+  .tl-point-label { font-family: "JetBrains Mono", monospace; font-size: 10.5px; font-weight: 700; fill: var(--ink-1); }
+  .tl-axis-label { font-family: "JetBrains Mono", monospace; font-size: 9.5px; fill: var(--ink-muted); }
+  .tl-avg-pill { fill: var(--warn); }
+  .tl-avg-text { font-family: "JetBrains Mono", monospace; font-size: 10px; font-weight: 700; fill: #241505; }
+  .tl-legend { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 10px; }
+  .tl-legend .tll { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-2); font-weight: 600; }
+  .tl-legend .sw { width: 14px; height: 3px; border-radius: 2px; }
+  .tl-legend .sw.dashed { background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 7px); height: 2px; color: var(--cream); }
+
+  /* ---------- type row (bigger numbers) ---------- */
+  .type-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .type-tile { background: var(--card); border-radius: 16px; padding: 16px 16px 14px; display: flex; flex-direction: column; gap: 4px; }
+  .type-tile .tt-val { font-family: "Oswald", sans-serif; font-weight: 700; font-size: 40px; line-height: 1; letter-spacing: -0.01em; }
+  .type-tile .tt-name { font-size: 12px; font-weight: 700; color: var(--ink-2); margin-top: 2px; }
+  .type-tile .tt-delta { font-size: 11px; font-weight: 700; margin-top: 6px; display: inline-flex; align-items: center; gap: 4px; }
+  .type-tile .tt-tr { font-size: 11px; font-weight: 600; color: var(--ink-muted); margin-top: 2px; font-family: "JetBrains Mono", monospace; }
+
+  /* ---------- sidebar gauge ---------- */
+  .gauge-card { background: var(--card); border-radius: 18px; padding: 18px 20px 14px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .gauge-card h3 { font-size: 14px; font-weight: 600; align-self: flex-start; margin-bottom: 4px; }
+  svg.gauge { width: 100%; max-width: 260px; height: auto; overflow: visible; }
+  .gauge-center-val { font-family: "Oswald", sans-serif; font-weight: 700; font-size: 30px; fill: var(--ink-1); }
+  .gauge-center-lbl { font-family: "Manrope", sans-serif; font-size: 10.5px; fill: var(--ink-muted); font-weight: 700; }
+  .gauge-legend { display: flex; flex-wrap: wrap; gap: 10px 14px; justify-content: center; margin-top: 6px; }
+  .gauge-legend .gl { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--ink-2); font-weight: 600; }
+  .gauge-legend .sw { width: 8px; height: 8px; border-radius: 999px; }
+
+  .insight-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .insight { border-radius: 16px; padding: 14px 15px; display: flex; flex-direction: column; gap: 6px; }
+  .insight.pink { background: linear-gradient(160deg, var(--pink), var(--plum)); color: #24040f; }
+  .insight.dark { background: var(--card); color: var(--ink-1); }
+  .insight .iv { font-family: "Oswald", sans-serif; font-weight: 700; font-size: 19px; }
+  .insight .il { font-size: 10.5px; font-weight: 700; opacity: 0.8; }
+  .carousel-dots { display: flex; gap: 4px; justify-content: center; margin-top: 2px; }
+  .carousel-dots span { width: 5px; height: 5px; border-radius: 999px; background: var(--hairline); }
+  .carousel-dots span:first-child { background: var(--ink-2); }
+
+  .justif-card { background: var(--card); border-radius: 16px; padding: 14px 15px; display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+  .justif-card .jc-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .justif-card .jc-title { font-size: 12px; font-weight: 700; color: var(--ink-2); }
+  .justif-card .jc-sub { font-size: 10.5px; color: var(--ink-muted); font-family: "JetBrains Mono", monospace; white-space: nowrap; }
+  .jc-rows { display: flex; flex-direction: column; gap: 8px; }
+  .jc-row { display: flex; flex-direction: column; gap: 3px; }
+  .jc-row-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 11.5px; font-weight: 700; color: var(--ink-1); }
+  .jc-row-top .jc-count { font-weight: 600; color: var(--ink-muted); font-family: "JetBrains Mono", monospace; }
+  .jc-bar { height: 6px; border-radius: 999px; background: var(--card-2); overflow: hidden; }
+  .jc-bar i { display: block; height: 100%; border-radius: 999px; }
+  .jc-empty { font-size: 11.5px; color: var(--ink-muted); }
+
+  footer.foot { grid-column: 1 / -1; margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--hairline); font-size: 11.5px; color: var(--ink-muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  footer.foot b { color: var(--ink-1); }
+
+  @media (max-width: 720px) {
+    .ring-row { grid-template-columns: 1fr; }
+    .type-row { grid-template-columns: repeat(2,1fr); }
+    .insight-row { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div id="loadingOverlay" style="position:fixed;inset:0;background:#142030;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:999;font-family:'Manrope',sans-serif;color:#f4efe6;">
+  <div style="width:34px;height:34px;border-radius:999px;border:3px solid rgba(244,239,230,0.15);border-top-color:#ff5c8d;animation:spin 0.9s linear infinite;"></div>
+  <div>Cargando datos en vivo de Airtable…</div>
+  <style>@keyframes spin{to{transform:rotate(360deg)}} .err{color:#ff5c8d;font-size:12px;margin-top:6px;font-family:"JetBrains Mono",monospace;}</style>
+</div>
+<div class="shell">
+  <div class="main">
+    <div class="topnav">
+      <div class="mark">●</div>
+      <div class="seg" id="granSeg">
+        <button data-gran="all" class="active">Todo</button>
+        <button data-gran="month">Mes</button>
+        <button data-gran="quarter">Trimestre</button>
+        <button data-gran="semester">Semestre</button>
+      </div>
+      <div class="multi-select" id="periodMulti" style="display:none;">
+        <button type="button" class="pill-select" id="periodMultiBtn">Selecciona periodos</button>
+        <div class="multi-panel" id="periodPanel"></div>
+      </div>
+      <select class="pill-select" id="tipoPick"><option value="all">Todos los tipos</option></select>
+      <div class="multi-select" id="estadoMulti">
+        <button type="button" class="pill-select" id="estadoMultiBtn">Todos los estados</button>
+        <div class="multi-panel" id="estadoPanel"></div>
+      </div>
+      <div class="seg" id="modeSeg" title="TR Efectivo: los Late marcados NON-CHARGABLE cuentan como On Time, y TODO registro NON-CHARGABLE (Late u On Time) se excluye del promedio de TR — igual que TR_SCORECARD en Airtable. TR General: se miden todos los servicios tal cual, sin excluir ninguno.">
+        <button data-mode="scorecard" class="active">TR Efectivo</button>
+        <button data-mode="real">TR General</button>
+      </div>
+      <div class="nav-spacer"></div>
+      <div class="util-dot">⟳</div>
+      <div class="avatar"></div>
+    </div>
+
+    <div class="stepper">
+      <span class="lbl">Meses con datos</span>
+      <div class="dots" id="stepperDots"></div>
+      <span class="asof" id="asOfNote"></span>
+      <span class="hist" id="resetBtn">Restablecer filtros</span>
+    </div>
+
+    <div class="ring-row" id="ringRow"></div>
+
+    <div class="section-head">
+      <h2>Cumplimiento SRV</h2>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-muted)" id="scopeNote"></span>
+    </div>
+
+    <div class="timeline-card">
+      <div class="tl-head">
+        <div>
+          <div class="tl-title">Solicitudes por mes — total y por tipo de servicio</div>
+          <div class="tl-sub" id="tlSub">línea punteada = total; línea punteada horizontal = promedio; color = tipo de servicio</div>
+        </div>
+        <div class="tl-pctwrap">
+          <div class="tl-pct" id="tlPct">–</div>
+          <div class="tl-pct-label">solicitudes en el periodo</div>
+        </div>
+      </div>
+      <div class="tl-watermark" id="tlWatermark"></div>
+      <svg class="tl-chart" id="tlChart" viewBox="0 0 900 190" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="tl-legend" id="tlLegend"></div>
+    </div>
+
+    <div class="type-row" id="typeRow"></div>
+  </div>
+
+  <div class="side">
+    <div class="gauge-card">
+      <h3>Distribución por On Time Srv</h3>
+      <svg class="gauge" id="gaugeChart" viewBox="0 0 260 160"></svg>
+      <div class="gauge-legend" id="gaugeLegend"></div>
+    </div>
+
+    <div class="insight-row">
+      <div class="insight pink" id="bestMonth">
+        <div class="il">Mejor mes</div>
+        <div class="iv">–</div>
+      </div>
+      <div class="insight dark" id="reviewCount">
+        <div class="il">Por revisar</div>
+        <div class="iv">–</div>
+      </div>
+    </div>
+    <div class="carousel-dots"><span></span><span></span><span></span></div>
+
+    <div class="justif-card" id="justifCard">
+      <div class="jc-head">
+        <span class="jc-title">Motivo de lates excusados (LATE REASON CODE)</span>
+        <span class="jc-sub" id="jcSub"></span>
+      </div>
+      <div class="jc-rows" id="justifRows"></div>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <span id="footCount"></span>
+    <span>Prototipo con datos exportados de Airtable · paleta MP088.</span>
+  </footer>
+</div>
+
+<script>
+  const BASELINE_DATE = '2026-02-28';
+  const NS = 'http://www.w3.org/2000/svg';
+
+  let records = [];
+  let tipos = [];
+  let estados = [];
+
+  function monthLabel(k){ const n=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']; const [y,m]=k.split('-'); return n[parseInt(m,10)-1]+' '+y; }
+  function quarterLabel(k){ const [y,q]=k.split('-'); return q+' '+y; }
+  function semesterLabel(k){ const [y,s]=k.split('-'); return s+' '+y; }
+  function fmtPct(n){ return n===null ? '—' : (n*100).toFixed(1)+'%'; }
+  // "scorecard" mode mirrors the TR_SCORECARD column in Airtable: a Late excused
+  // as NON-CHARGABLE counts as On Time and its TR is left out of the average.
+  // "real" mode counts every Late as Late and averages TR over all of them.
+  function isOnTime(r){ return r.trStatus==='🟢 On Time' || (state.mode!=='real' && r.excused); }
+  function pctOf(rows){ return rows.length ? rows.filter(isOnTime).length/rows.length : null; }
+  function trValsOf(rows){ return rows.filter(r => (state.mode==='real' || !r.trExcluded) && typeof r.tr==='number').map(r=>r.tr); }
+
+  const tipoPick = document.getElementById('tipoPick');
+  const state = { gran:'all', periods:new Set(), tipo:'all', estados:new Set(), mode:'scorecard' };
+
+  function periodsFor(gran){
+    const f = gran==='month' ? r=>r.monthKey : gran==='quarter' ? r=>r.quarterKey : r=>r.semesterKey;
+    return Array.from(new Set(records.map(f))).sort();
+  }
+  function labelFor(gran,key){ return gran==='month'?monthLabel(key):gran==='quarter'?quarterLabel(key):gran==='semester'?semesterLabel(key):key; }
+  function keyOf(r,gran){ return gran==='month'?r.monthKey:gran==='quarter'?r.quarterKey:gran==='semester'?r.semesterKey:null; }
+
+  const granSeg = document.getElementById('granSeg');
+  const periodMulti = document.getElementById('periodMulti');
+  const periodMultiBtn = document.getElementById('periodMultiBtn');
+  const periodPanel = document.getElementById('periodPanel');
+
+  function periodBtnLabel(){
+    const periods = periodsFor(state.gran);
+    if (state.periods.size === 0 || state.periods.size === periods.length) return 'Todos · ' + labelForGran(state.gran);
+    if (state.periods.size === 1) return labelFor(state.gran, [...state.periods][0]);
+    return state.periods.size + ' seleccionados';
+  }
+  function labelForGran(g){ return g==='month'?'meses':g==='quarter'?'trimestres':'semestres'; }
+
+  function buildPeriodPanel(){
+    const periods = periodsFor(state.gran);
+    periodPanel.innerHTML = `<div class="multi-actions"><span data-act="all">Todos</span><span data-act="latest">Solo el más reciente</span></div>` +
+      periods.map(p => `<label class="multi-row"><input type="checkbox" value="${p}" ${state.periods.has(p)?'checked':''}/>${labelFor(state.gran,p)}</label>`).join('');
+    periodMultiBtn.textContent = periodBtnLabel();
+  }
+  periodPanel.addEventListener('click', e => {
+    const act = e.target.closest('[data-act]');
+    if (act) {
+      const periods = periodsFor(state.gran);
+      if (act.dataset.act === 'all') state.periods = new Set(periods);
+      else if (act.dataset.act === 'latest') state.periods = new Set([periods[periods.length-1]]);
+      buildPeriodPanel(); render();
+      return;
+    }
+    const input = e.target.closest('input[type="checkbox"]');
+    if (input) {
+      if (input.checked) state.periods.add(input.value);
+      else {
+        if (state.periods.size <= 1) { input.checked = true; return; } // keep at least one selected
+        state.periods.delete(input.value);
+      }
+      periodMultiBtn.textContent = periodBtnLabel();
+      render();
+    }
+  });
+  periodMultiBtn.addEventListener('click', e => { e.stopPropagation(); periodPanel.classList.toggle('open'); });
+
+  const estadoMulti = document.getElementById('estadoMulti');
+  const estadoMultiBtn = document.getElementById('estadoMultiBtn');
+  const estadoPanel = document.getElementById('estadoPanel');
+
+  function estadoBtnLabel(){
+    if (state.estados.size === 0 || state.estados.size === estados.length) return 'Todos los estados';
+    if (state.estados.size === 1) return [...state.estados][0];
+    return state.estados.size + ' estados';
+  }
+  function buildEstadoPanel(){
+    estadoPanel.innerHTML = `<div class="multi-actions"><span data-act="all">Todos</span><span data-act="none">Ninguno</span></div>` +
+      estados.map(e => `<label class="multi-row"><input type="checkbox" value="${e}" ${(state.estados.size===0||state.estados.has(e))?'checked':''}/>${e}</label>`).join('');
+    estadoMultiBtn.textContent = estadoBtnLabel();
+  }
+  estadoPanel.addEventListener('click', e => {
+    const act = e.target.closest('[data-act]');
+    if (act) {
+      if (act.dataset.act === 'all') state.estados = new Set();
+      else if (act.dataset.act === 'none') state.estados = new Set([estados[0]]);
+      buildEstadoPanel(); render();
+      return;
+    }
+    const input = e.target.closest('input[type="checkbox"]');
+    if (input) {
+      if (state.estados.size === 0) state.estados = new Set(estados); // materialize "todos" before editing
+      if (input.checked) state.estados.add(input.value);
+      else {
+        if (state.estados.size <= 1) { input.checked = true; return; } // keep at least one selected
+        state.estados.delete(input.value);
+      }
+      estadoMultiBtn.textContent = estadoBtnLabel();
+      render();
+    }
+  });
+  estadoMultiBtn.addEventListener('click', e => { e.stopPropagation(); estadoPanel.classList.toggle('open'); });
+  buildEstadoPanel();
+
+  document.addEventListener('click', e => {
+    if (!periodMulti.contains(e.target)) periodPanel.classList.remove('open');
+    if (!estadoMulti.contains(e.target)) estadoPanel.classList.remove('open');
+  });
+
+  granSeg.addEventListener('click', e => {
+    const btn = e.target.closest('button'); if (!btn) return;
+    [...granSeg.children].forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+    state.gran = btn.dataset.gran;
+    if (state.gran==='all'){ periodMulti.style.display='none'; state.periods=new Set(); }
+    else {
+      const periods = periodsFor(state.gran);
+      state.periods = new Set([periods[periods.length-1]]);
+      buildPeriodPanel();
+      periodMulti.style.display='inline-flex';
+    }
+    render();
+  });
+  tipoPick.addEventListener('change', ()=>{ state.tipo=tipoPick.value; render(); });
+
+  const modeSeg = document.getElementById('modeSeg');
+  modeSeg.addEventListener('click', e => {
+    const btn = e.target.closest('button'); if (!btn) return;
+    [...modeSeg.children].forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+    state.mode = btn.dataset.mode;
+    render();
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', ()=>{
+    state.gran='all'; state.periods=new Set(); state.tipo='all'; state.estados=new Set(); state.mode='scorecard';
+    [...granSeg.children].forEach(b=>b.classList.remove('active')); granSeg.children[0].classList.add('active');
+    [...modeSeg.children].forEach(b=>b.classList.remove('active')); modeSeg.children[0].classList.add('active');
+    periodMulti.style.display='none'; periodPanel.classList.remove('open');
+    tipoPick.value='all'; buildEstadoPanel(); estadoPanel.classList.remove('open'); render();
+  });
+
+  function filteredRecords(){
+    const estadoActive = state.estados.size > 0 && state.estados.size < estados.length;
+    return records.filter(r => {
+      if (state.gran!=='all' && !state.periods.has(keyOf(r,state.gran))) return false;
+      if (state.tipo!=='all' && r.tipo!==state.tipo) return false;
+      if (estadoActive && !state.estados.has(r.estado)) return false;
+      return true;
+    });
+  }
+
+  function initStepper(){
+    const months = periodsFor('month');
+    const wrap = document.getElementById('stepperDots');
+    months.forEach((m,i) => {
+      if (i>0){ const ln=document.createElement('div'); ln.className='seg-line'; wrap.appendChild(ln); }
+      const d = document.createElement('div');
+      d.className = 'step-dot ' + (i===months.length-1 ? 'now' : 'done');
+      d.title = monthLabel(m);
+      wrap.appendChild(d);
+    });
+    const today = new Date();
+    const dayNames = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const todayLabel = today.getDate() + ' ' + dayNames[today.getMonth()] + ' ' + today.getFullYear();
+    document.getElementById('asOfNote').textContent = 'Datos activos hasta la fecha actual (' + todayLabel + ')';
+  }
+
+  function ringSvg(pct, color){
+    const r=20, c=2*Math.PI*r, off=c*(1-pct);
+    return `<svg class="ring-svg" width="48" height="48" viewBox="0 0 48 48">
+      <circle cx="24" cy="24" r="${r}" fill="none" stroke="rgba(244,239,230,0.1)" stroke-width="5"/>
+      <circle cx="24" cy="24" r="${r}" fill="none" stroke="${color}" stroke-width="5" stroke-linecap="round"
+        stroke-dasharray="${c}" stroke-dashoffset="${off}" transform="rotate(-90 24 24)"/>
+    </svg>`;
+  }
+  function renderRings(rows){
+    const total = rows.length;
+    const pct = pctOf(rows);
+    const trVals = trValsOf(rows);
+    const trAvg = trVals.length ? trVals.reduce((a,b)=>a+b,0)/trVals.length : 0;
+    const lateChg = rows.filter(r=>r.trStatus==='🟠 Late' && r.chargable==='CHARGABLE').length;
+    const trPctOfCap = Math.min(1, trAvg/10);
+    const lateShare = total ? lateChg/total : 0;
+
+    document.getElementById('ringRow').innerHTML = `
+      <div class="ring-card">
+        <div class="ring-top">${ringSvg(pct||0,'var(--pink)')}<div><div class="ring-name">% On Time</div><div class="ring-value">${fmtPct(pct)}</div></div></div>
+        <div class="ring-sub ${pct>=0.85?'up':'down'}">${total} servicios en el periodo</div>
+      </div>
+      <div class="ring-card">
+        <div class="ring-top">${ringSvg(trPctOfCap,'var(--slate)')}<div><div class="ring-name">TR promedio</div><div class="ring-value">${trAvg.toFixed(1)}d</div></div></div>
+        <div class="ring-sub">sobre ${trVals.length} servicios contabilizados</div>
+      </div>
+      <div class="ring-card">
+        <div class="ring-top">${ringSvg(lateShare,'var(--warn)')}<div><div class="ring-name">Late Chargable</div><div class="ring-value">${lateChg}</div></div></div>
+        <div class="ring-sub ${lateShare<=0.1?'up':'down'}">${fmtPct(lateShare)} del periodo</div>
+      </div>`;
+  }
+
+  // ---------- volume timeline: total (dashed) + per-tipo lines (solid, colored) + avg (dashed) ----------
+  const tipoLineColor = { RETIRO: '#3987e5', 'INSTALACIÓN': '#d55181', 'REPARACIÓN': '#9085e9', TRASLADO: '#199e70' };
+
+  function renderTimeline(){
+    const months = state.gran==='all' ? periodsFor('month') :
+      periodsFor('month').filter(m => {
+        const r0 = records.find(r=>r.monthKey===m);
+        return r0 ? state.periods.has(keyOf(r0,state.gran)) : false;
+      });
+    const useMonths = months.length ? months : periodsFor('month');
+    const activeTipos = state.tipo==='all' ? tipos : [state.tipo];
+
+    const series = useMonths.map(mk => {
+      const rowsAll = records.filter(r=>r.monthKey===mk && (state.tipo==='all'||r.tipo===state.tipo));
+      const byTipo = {};
+      activeTipos.forEach(t => { byTipo[t] = rowsAll.filter(r=>r.tipo===t).length; });
+      return { key: mk, label: monthLabel(mk), total: rowsAll.length, byTipo };
+    });
+
+    const totalSum = series.reduce((a,s)=>a+s.total,0);
+    document.getElementById('tlPct').textContent = totalSum;
+    document.getElementById('tlWatermark').textContent = totalSum || '';
+
+    const svg = document.getElementById('tlChart');
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    const W=900,H=190,padL=30,padR=20,padT=30,padB=26;
+    const plotW=W-padL-padR, plotH=H-padT-padB;
+    const n = series.length;
+
+    if (n===0){
+      const t = document.createElementNS(NS,'text');
+      t.setAttribute('x',W/2); t.setAttribute('y',H/2); t.setAttribute('text-anchor','middle');
+      t.setAttribute('class','tl-axis-label'); t.textContent = 'Sin datos para este filtro';
+      svg.appendChild(t);
+      return;
+    }
+
+    const maxVal = Math.max(1, ...series.map(s=>s.total), ...series.flatMap(s=>activeTipos.map(t=>s.byTipo[t]||0))) * 1.15;
+    const x = i => n<=1 ? padL+plotW/2 : padL + (plotW*i)/(n-1);
+    const y = v => padT + plotH * (1 - v/maxVal);
+
+    const steps = 4;
+    for (let s=0; s<=steps; s++){
+      const v = (maxVal/steps)*s;
+      const ln = document.createElementNS(NS,'line');
+      ln.setAttribute('x1',padL); ln.setAttribute('x2',W-padR);
+      ln.setAttribute('y1',y(v)); ln.setAttribute('y2',y(v));
+      ln.setAttribute('stroke','rgba(244,239,230,0.06)'); ln.setAttribute('stroke-width','1');
+      svg.appendChild(ln);
+      const ylbl = document.createElementNS(NS,'text');
+      ylbl.setAttribute('x',6); ylbl.setAttribute('y',y(v)+3);
+      ylbl.setAttribute('class','tl-axis-label'); ylbl.textContent = Math.round(v);
+      svg.appendChild(ylbl);
+    }
+
+    // horizontal average-total dashed line
+    const avgTotal = totalSum / n;
+    const avgY = y(avgTotal);
+    const avgLine = document.createElementNS(NS,'line');
+    avgLine.setAttribute('x1',padL); avgLine.setAttribute('x2',W-padR);
+    avgLine.setAttribute('y1',avgY); avgLine.setAttribute('y2',avgY);
+    avgLine.setAttribute('stroke','var(--warn)'); avgLine.setAttribute('stroke-width','1.5');
+    avgLine.setAttribute('stroke-dasharray','5 4');
+    svg.appendChild(avgLine);
+    const pillW = 100, pillH = 20;
+    const pillX = W - padR - pillW, pillY = avgY - pillH/2;
+    const pillRect = document.createElementNS(NS,'rect');
+    pillRect.setAttribute('x',pillX); pillRect.setAttribute('y',pillY);
+    pillRect.setAttribute('width',pillW); pillRect.setAttribute('height',pillH);
+    pillRect.setAttribute('rx',10); pillRect.setAttribute('class','tl-avg-pill');
+    svg.appendChild(pillRect);
+    const pillText = document.createElementNS(NS,'text');
+    pillText.setAttribute('x',pillX+pillW/2); pillText.setAttribute('y',pillY+pillH/2+4);
+    pillText.setAttribute('text-anchor','middle'); pillText.setAttribute('class','tl-avg-text');
+    pillText.textContent = 'PROM ' + avgTotal.toFixed(1) + '/mes';
+    svg.appendChild(pillText);
+
+    function drawLine(vals, color, dashed, width, showDots, showLabels){
+      let d = `M ${x(0)} ${y(vals[0])}`;
+      for (let i=1;i<n;i++) d += ` L ${x(i)} ${y(vals[i])}`;
+      const path = document.createElementNS(NS,'path');
+      path.setAttribute('d', d); path.setAttribute('fill','none');
+      path.setAttribute('stroke', color); path.setAttribute('stroke-width', width);
+      path.setAttribute('stroke-linejoin','round'); path.setAttribute('stroke-linecap','round');
+      if (dashed) path.setAttribute('stroke-dasharray','6 5');
+      svg.appendChild(path);
+      if (showDots) vals.forEach((v,i) => {
+        const dot = document.createElementNS(NS,'circle');
+        dot.setAttribute('cx',x(i)); dot.setAttribute('cy',y(v)); dot.setAttribute('r','3.5');
+        dot.setAttribute('fill', color); dot.setAttribute('stroke','#101822'); dot.setAttribute('stroke-width','1.5');
+        svg.appendChild(dot);
+      });
+      if (showLabels) vals.forEach((v,i) => {
+        const lbl = document.createElementNS(NS,'text');
+        lbl.setAttribute('x',x(i)); lbl.setAttribute('y', y(v) - 10);
+        lbl.setAttribute('text-anchor','middle'); lbl.setAttribute('class','tl-point-label');
+        lbl.setAttribute('fill', color);
+        lbl.textContent = v;
+        svg.appendChild(lbl);
+      });
+    }
+
+    // per-tipo solid colored lines
+    activeTipos.forEach(t => {
+      const vals = series.map(s => s.byTipo[t] || 0);
+      drawLine(vals, tipoLineColor[t] || '#85a3b2', false, 2, true, false);
+    });
+
+    // total dashed line (drawn last, on top)
+    drawLine(series.map(s=>s.total), 'var(--cream)', true, 2.5, true, true);
+
+    series.forEach((s,i) => {
+      const xlbl = document.createElementNS(NS,'text');
+      xlbl.setAttribute('x',x(i)); xlbl.setAttribute('y', H-6);
+      xlbl.setAttribute('text-anchor','middle'); xlbl.setAttribute('class','tl-axis-label');
+      xlbl.textContent = s.label;
+      svg.appendChild(xlbl);
+    });
+
+    document.getElementById('tlLegend').innerHTML =
+      `<span class="tll"><span class="sw dashed"></span>Total</span>` +
+      activeTipos.map(t => `<span class="tll"><span class="sw" style="background:${tipoLineColor[t]||'#85a3b2'}"></span>${t.charAt(0)+t.slice(1).toLowerCase()}</span>`).join('') +
+      `<span class="tll"><span class="sw dashed" style="color:var(--warn)"></span>Promedio total/mes</span>`;
+
+    document.getElementById('tlSub').textContent =
+      `${n} ${n===1?'mes':'meses'} · ${totalSum} solicitudes en total`;
+  }
+
+  function renderTypeRow(rows){
+    const total = rows.length;
+    document.getElementById('typeRow').innerHTML = tipos.map(t => {
+      const rt = rows.filter(r=>r.tipo===t);
+      const pctOn = pctOf(rt);
+      const trVals = trValsOf(rt);
+      const trAvg = trVals.length ? trVals.reduce((a,b)=>a+b,0)/trVals.length : null;
+      return `<div class="type-tile">
+        <div class="tt-val">${rt.length}</div>
+        <div class="tt-name">${t.charAt(0)+t.slice(1).toLowerCase()}</div>
+        <div class="tt-delta" style="color:${pctOn===null?'var(--ink-muted)':pctOn>=0.85?'var(--good)':'var(--pink)'}">${pctOn===null?'—':fmtPct(pctOn)+' on time'}</div>
+        <div class="tt-tr">${trAvg===null?'TR —':'TR prom. '+trAvg.toFixed(1)+'d'}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ---------- half-donut gauge: status distribution ----------
+  function renderGauge(rows){
+    const total = rows.length;
+    const onTime = rows.filter(r=>r.trStatus==='🟢 On Time').length;
+    const excused = rows.filter(r=>r.excused).length;
+    const lateChg = rows.filter(r=>r.trStatus==='🟠 Late' && r.chargable==='CHARGABLE').length;
+    const uncoded = rows.filter(r=>r.trStatus==='🟠 Late' && !r.chargable).length;
+    const segs = [
+      { label:'On Time', val:onTime, color:'var(--good)' },
+      { label:'Late excusado', val:excused, color:'var(--info)' },
+      { label:'Late chargable', val:lateChg, color:'var(--pink)' },
+      { label:'Sin codificar', val:uncoded, color:'var(--warn)' },
+    ].filter(s => s.val > 0);
+
+    const svg = document.getElementById('gaugeChart');
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    const cx=130, cy=130, R=92, thick=22;
+    let cum = 0;
+    const colorVal = c => getComputedStyle(document.documentElement).getPropertyValue(c.replace('var(','').replace(')','')).trim() || c;
+
+    segs.forEach(s => {
+      const frac = total ? s.val/total : 0;
+      const a0 = 180 - cum*180;
+      cum += frac;
+      const a1 = 180 - cum*180;
+      const toRad = d => d*Math.PI/180;
+      const p0 = { x: cx + R*Math.cos(toRad(a0)), y: cy - R*Math.sin(toRad(a0)) };
+      const p1 = { x: cx + R*Math.cos(toRad(a1)), y: cy - R*Math.sin(toRad(a1)) };
+      const large = (a0-a1) > 180 ? 1 : 0;
+      const path = document.createElementNS(NS,'path');
+      path.setAttribute('d', `M ${p0.x} ${p0.y} A ${R} ${R} 0 ${large} 1 ${p1.x} ${p1.y}`);
+      path.setAttribute('fill','none');
+      path.setAttribute('stroke', resolveVar(s.color));
+      path.setAttribute('stroke-width', thick);
+      path.setAttribute('stroke-linecap', segs.length>1 ? 'butt' : 'round');
+      svg.appendChild(path);
+
+      if (frac >= 0.06){
+        const midA = (a0+a1)/2, rad = toRad(midA);
+        const lx1 = cx+(R+thick/2+2)*Math.cos(rad), ly1 = cy-(R+thick/2+2)*Math.sin(rad);
+        const lx2 = cx+(R+thick/2+14)*Math.cos(rad), ly2 = cy-(R+thick/2+14)*Math.sin(rad);
+        const line = document.createElementNS(NS,'line');
+        line.setAttribute('x1',lx1); line.setAttribute('y1',ly1); line.setAttribute('x2',lx2); line.setAttribute('y2',ly2);
+        line.setAttribute('stroke','rgba(244,239,230,0.35)'); line.setAttribute('stroke-width','1');
+        svg.appendChild(line);
+        const txt = document.createElementNS(NS,'text');
+        txt.setAttribute('x', lx2 + (Math.cos(rad)>=0?4:-4));
+        txt.setAttribute('y', ly2 + (midA>90?-2:8));
+        txt.setAttribute('text-anchor', Math.cos(rad)>=0.15 ? 'start' : Math.cos(rad)<=-0.15 ? 'end' : 'middle');
+        txt.setAttribute('font-family','JetBrains Mono, monospace'); txt.setAttribute('font-size','11');
+        txt.setAttribute('font-weight','700'); txt.setAttribute('fill','var(--ink-1)');
+        txt.textContent = Math.round(frac*100)+'%';
+        svg.appendChild(txt);
+      }
+    });
+
+    const centerVal = document.createElementNS(NS,'text');
+    centerVal.setAttribute('x',cx); centerVal.setAttribute('y',cy-2);
+    centerVal.setAttribute('text-anchor','middle'); centerVal.setAttribute('class','gauge-center-val');
+    centerVal.textContent = total;
+    svg.appendChild(centerVal);
+    const centerLbl = document.createElementNS(NS,'text');
+    centerLbl.setAttribute('x',cx); centerLbl.setAttribute('y',cy+16);
+    centerLbl.setAttribute('text-anchor','middle'); centerLbl.setAttribute('class','gauge-center-lbl');
+    centerLbl.textContent = 'servicios totales';
+    svg.appendChild(centerLbl);
+
+    document.getElementById('gaugeLegend').innerHTML = segs.map(s => `
+      <span class="gl"><span class="sw" style="background:${resolveVar(s.color)}"></span>${s.label} (${s.val})</span>
+    `).join('');
+  }
+  function resolveVar(v){
+    if (!v.startsWith('var(')) return v;
+    const name = v.slice(4,-1);
+    return getComputedStyle(document.body).getPropertyValue(name).trim();
+  }
+
+  function renderInsights(){
+    const months = periodsFor('month');
+    let best = null;
+    months.forEach(mk => {
+      const rows = records.filter(r=>r.monthKey===mk);
+      const p = pctOf(rows);
+      if (p!==null && (!best || p>best.pct)) best = { mk, pct: p };
+    });
+    document.getElementById('bestMonth').querySelector('.iv').textContent = best ? monthLabel(best.mk) + ' · ' + fmtPct(best.pct) : '—';
+    const uncoded = filteredRecords().filter(r => r.trStatus==='🟠 Late' && !r.chargable).length;
+    document.getElementById('reviewCount').querySelector('.iv').textContent = uncoded + ' lates sin codificar';
+  }
+
+  const JUSTIF_PALETTE = ['var(--pink)', 'var(--info)', 'var(--warn)', 'var(--slate)', 'var(--good)', 'var(--plum)'];
+  function justifColor(i){ return JUSTIF_PALETTE[i % JUSTIF_PALETTE.length]; }
+
+  function renderJustif(rows){
+    const excused = rows.filter(r => r.excused);
+    const wrap = document.getElementById('justifRows');
+    document.getElementById('jcSub').textContent = excused.length + ' de ' + rows.filter(r=>r.trStatus==='🟠 Late').length + ' lates';
+    if (!excused.length) {
+      wrap.innerHTML = '<div class="jc-empty">Sin lates excusados en este periodo.</div>';
+      return;
+    }
+    const counts = {};
+    excused.forEach(r => { const k = r.reasonCode || 'Sin codificar'; counts[k] = (counts[k]||0) + 1; });
+    const entries = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+    wrap.innerHTML = entries.map(([name,n], i) => {
+      const pct = n / excused.length;
+      const color = name === 'Sin codificar' ? 'var(--ink-muted)' : justifColor(i);
+      return `<div class="jc-row">
+        <div class="jc-row-top"><span>${name}</span><span class="jc-count">${n} · ${fmtPct(pct)}</span></div>
+        <div class="jc-bar"><i style="width:${(pct*100).toFixed(1)}%;background:${resolveVar(color)}"></i></div>
+      </div>`;
+    }).join('');
+  }
+
+  function render(){
+    const rows = filteredRecords();
+    renderRings(rows);
+    renderTimeline();
+    renderTypeRow(rows);
+    renderGauge(rows);
+    renderInsights();
+    renderJustif(rows);
+    let scope = 'Todo el periodo';
+    if (state.gran !== 'all') {
+      const periods = periodsFor(state.gran);
+      scope = (state.periods.size === periods.length) ? 'Todos los ' + labelForGran(state.gran) :
+        [...state.periods].sort().map(p => labelFor(state.gran,p)).join(', ');
+    }
+    let estadoNote = '';
+    if (state.estados.size > 0 && state.estados.size < estados.length) {
+      estadoNote = ' · ' + (state.estados.size === 1 ? [...state.estados][0] : state.estados.size + ' estados');
+    }
+    const modeNote = state.mode==='real' ? ' · TR General' : '';
+    document.getElementById('scopeNote').textContent = scope + (state.tipo!=='all' ? ' · ' + state.tipo : '') + estadoNote + modeNote;
+  }
+
+  function initFooter(){
+    const dates = records.map(r=>r.fecha).sort();
+    document.getElementById('footCount').innerHTML =
+      `<b>${records.length}</b> servicios concluidos desde <b>${BASELINE_DATE}</b> (${dates[0]} – ${dates[dates.length-1]}).`;
+  }
+
+  async function init(){
+    const overlay = document.getElementById('loadingOverlay');
+    try {
+      const res = await fetch('/api/scorecard');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const payload = await res.json();
+      const raw = payload.records || payload;
+
+      records = raw.map(r => ({ folio:r[0], tipo:r[1], fecha:r[2], tr:r[3], trStatus:r[4], chargable:r[5], estado:r[6] || 'Sin estado', reasonCode:r[7] || null }))
+        .filter(r => r.fecha && r.fecha >= BASELINE_DATE);
+
+      records.forEach(r => {
+        r.excused = r.trStatus === '🟠 Late' && r.chargable === 'NON-CHARGABLE';
+        r.effectiveOnTime = r.trStatus === '🟢 On Time' || r.excused;
+        // TR_SCORECARD en Airtable excluye del promedio de TR a TODO registro marcado
+        // NON-CHARGABLE, esté On Time o Late — no solo a los Late excusados.
+        r.trExcluded = r.chargable === 'NON-CHARGABLE';
+        r.monthKey = r.fecha.slice(0,7);
+        const [y,m] = r.monthKey.split('-');
+        r.quarterKey = y+'-Q'+(Math.floor((parseInt(m,10)-1)/3)+1);
+        r.semesterKey = y+'-S'+(parseInt(m,10)<=6?1:2);
+      });
+
+      tipos = Array.from(new Set(records.map(r=>r.tipo))).sort();
+      tipoPick.innerHTML = '<option value="all">Todos los tipos</option>';
+      tipos.forEach(t => { const o=document.createElement('option'); o.value=t; o.textContent=t.charAt(0)+t.slice(1).toLowerCase(); tipoPick.appendChild(o); });
+
+      estados.length = 0;
+      Array.from(new Set(records.map(r=>r.estado))).sort().forEach(e => estados.push(e));
+
+      initStepper();
+      initFooter();
+      buildEstadoPanel();
+      render();
+      overlay.style.display = 'none';
+    } catch (err) {
+      overlay.innerHTML = `<div>No se pudieron cargar los datos de Airtable.</div><div class="err">${err.message}</div>`;
+    }
+  }
+
+  init();
+</script>
+
+

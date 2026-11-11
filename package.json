@@ -1,8 +1,8 @@
 {
-  "name": "uploadsrvredbull",
+  "name": "srv-scorecard-redbull",
   "version": "1.0.0",
   "private": true,
-  "description": "Pagina de carga masiva de servicios (webview para Glide) conectada a Airtable via Vercel.",
+  "description": "Dashboard On Time Service (Red Bull / Solkos) conectado en vivo a Airtable via una funcion serverless de Vercel.",
   "scripts": {
     "dev": "vercel dev"
   }

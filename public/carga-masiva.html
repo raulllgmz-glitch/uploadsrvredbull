@@ -56,8 +56,11 @@
   .hint{font-size:13px;color:var(--color-text-muted);margin-top:8px;}
   a.hint-link{color:var(--color-accent);text-decoration:none;font-weight:600;}
 
-  .entries{display:flex;flex-direction:column;gap:8px;max-height:min(58vh,520px);overflow-y:auto;overscroll-behavior:contain;padding-right:2px;margin:0 -2px;}
-  .entry{border:1px solid var(--color-border);border-radius:var(--radius);background:var(--color-surface-raised);position:relative;overflow:hidden;}
+  .entries{display:flex;flex-direction:column;gap:8px;max-height:min(58vh,520px);overflow-y:auto;overscroll-behavior:contain;padding-right:2px;margin:0 -2px;-webkit-overflow-scrolling:touch;}
+  /* nota: SIN overflow:hidden aquí — en algunos WebView de Android, border-radius + overflow:hidden
+     dentro de una lista larga con scroll hace que las filas se pinten en blanco/vacías hasta que se
+     fuerza un repintado. translateZ(0) fuerza su propia capa de composición para evitar ese bug. */
+  .entry{border:1px solid var(--color-border);border-radius:var(--radius);background:var(--color-surface-raised);position:relative;transform:translateZ(0);-webkit-transform:translateZ(0);backface-visibility:hidden;-webkit-backface-visibility:hidden;}
   .entry.has-error{border-color:var(--color-error);}
   .entry.is-ok{border-color:var(--color-ok);}
   .entry-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;min-height:44px;background:none;border:none;width:100%;text-align:left;font:inherit;color:inherit;}
@@ -170,7 +173,9 @@ function newRow(partial){
 }
 
 function normalizeHeader(h){
-  return (h || '').toString().trim().toLowerCase();
+  // quita paréntesis tipo "(opcional)" y espacios extra, para que "Referencia (opcional)"
+  // siga encontrando la clave "referencia" en COLUMN_MAP aunque la plantilla cambie el texto.
+  return (h || '').toString().trim().toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').trim();
 }
 
 document.getElementById('fileInput').addEventListener('change', function(e){
